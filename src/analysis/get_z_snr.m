@@ -36,8 +36,17 @@ frex_idx = dsearchn(freq', frex');
 
 for i_f=1:length(frex)
     
-    idx_start = max(frex_idx(i_f) - bin_to, 1); 
-    idx_end = min(frex_idx(i_f) + bin_to, N); 
+    idx_start = frex_idx(i_f) - bin_to; 
+    idx_end = frex_idx(i_f) + bin_to; 
+    
+    if idx_start <= 0
+        error('Frex %d is too close to the start of the input (idx_start = %d).', ...
+              i_f, idx_start); 
+    end
+    if idx_end > shape(end)
+        error('Frex %d is too close to the end of the input (idx_end = %d).', ...
+              i_f, idx_end); 
+    end
 
     index_snip = repmat({':'}, 1, ndims(mX) + 1);
     index_snip{ndims(mX) + 1} = i_f;
