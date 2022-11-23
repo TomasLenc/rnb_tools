@@ -86,7 +86,7 @@ else
 end
 
 % average epochs (if any)
-x = mean(x,1); 
+x = mean(x, 1); 
 
 if ~isempty(sound_fs) && ~isempty(sound_s)
     t_s = [0 : length(sound_s)-1] / sound_fs; 
@@ -105,6 +105,7 @@ h = plot(ax, t, x,...
 ax.XAxis.Visible = 'off'; 
 ax.YAxis.Visible = 'on'; 
 ax.TickDir = 'out'; 
+ax.XLim = [t(1), t(end)]; 
 
 if isnumeric(y_max) 
     % mirror y-axs limits if needed 
