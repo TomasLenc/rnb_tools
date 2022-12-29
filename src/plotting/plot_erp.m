@@ -1,4 +1,4 @@
-function h = plot_erp(x, fs, varargin)
+function h = plot_erp(x, varargin)
 % This function plots time-domain ERP. Note that atm, this only plots 1-D responses, 
 % not 2-D time-frequency heatmaps. 
 % 
@@ -7,7 +7,6 @@ function h = plot_erp(x, fs, varargin)
 % 
 % Parameters
 % ----------
-% ax : axes instance 
 % x : array 
 %   (epoch or subject, time) array with the time-domain data
 % fs : float
@@ -28,6 +27,7 @@ function h = plot_erp(x, fs, varargin)
 parser = inputParser; 
 
 addParameter(parser, 'ax', []); 
+addParameter(parser, 'fs', []); 
 addParameter(parser, 't', []); 
 addParameter(parser, 'y_max', Inf); 
 addParameter(parser, 'sound_fs', []); 
@@ -41,6 +41,7 @@ addParameter(parser, 'fontsize', 12);
 parse(parser, varargin{:}); 
 
 ax = parser.Results.ax; 
+fs = parser.Results.fs; 
 t = parser.Results.t; 
 y_max = parser.Results.y_max; 
 sound_s = parser.Results.sound_s; 
@@ -51,6 +52,9 @@ linew = parser.Results.linew;
 plot_ci = parser.Results.ci; 
 fontsize = parser.Results.fontsize; 
 
+if isempty(fs) && isempty(t)
+    error('You must specify either "fs" or "t" parameter.'); 
+end
 
 
 %%
