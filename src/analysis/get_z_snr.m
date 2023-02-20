@@ -86,4 +86,4 @@ z_snr = (s_mean - noise_mean) ./ noise_sd;
 % plot(idx_signal, mean_snip(idx_signal), 'ro')
 
 % this is just for output
-idx_snip = [-bin_to : -bin_from, +bin_from : +bin_to]; 
+idx_snip = [-bin_to : +bin_to]; 
