@@ -26,6 +26,8 @@ function [header, data] = make_dataset(varargin)
 %     Pause before the first trial in seconds.
 % end_recording_buffer : float 
 %     Pause before the last trial in seconds.
+% data_max : float 
+%     Maximum value of the data (uniform noise between 0 and data_max). 
 % 
 % Returns
 % -------
@@ -44,6 +46,7 @@ addParameter(parser, 'pause_dur', [2, 5]);
 addParameter(parser, 'n_chans', 64);
 addParameter(parser, 'start_recording_buffer', 10);
 addParameter(parser, 'end_recording_buffer', 10);
+addParameter(parser, 'data_max', 0.1);
 
 parse(parser, varargin{:});
 
@@ -56,6 +59,7 @@ n_chans = parser.Results.n_chans;
 pause_dur_params = parser.Results.pause_dur;
 start_recording_buffer = parser.Results.start_recording_buffer;
 end_recording_buffer = parser.Results.end_recording_buffer;
+data_max = parser.Results.data_max;
 
 %% prepare data
 
@@ -85,7 +89,7 @@ total_dur = start_recording_buffer + ...
             length(trial_codes) * trial_dur;
 
 N = round(total_dur * fs); 
-data = 0.1 * rand([1, n_chans, 1, 1, 1, N]); 
+data = data_max * rand([1, n_chans, 1, 1, 1, N]); 
 
 t = start_recording_buffer;
 c = 1;
