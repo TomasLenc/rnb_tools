@@ -1,5 +1,5 @@
 function [header, data] = make_dataset(varargin)
-% This function makes an artificial continuous dataset for testing. 
+% This function makes a continuous dataset filled with noise for testing. 
 % 
 % Parameters
 % ----------
@@ -28,6 +28,8 @@ function [header, data] = make_dataset(varargin)
 %     Pause before the last trial in seconds.
 % data_max : float 
 %     Maximum value of the data (uniform noise between 0 and data_max). 
+% fill_with : str, optional, {'noise', 'zeros', 'nan'}, default='noise'
+%     Type of data to fill the dataset with. 
 % 
 % Returns
 % -------
@@ -47,6 +49,7 @@ addParameter(parser, 'n_chans', 64);
 addParameter(parser, 'start_recording_buffer', 10);
 addParameter(parser, 'end_recording_buffer', 10);
 addParameter(parser, 'data_max', 0.1);
+addParameter(parser, 'fill_with', 'noise');
 
 parse(parser, varargin{:});
 
@@ -60,6 +63,7 @@ pause_dur_params = parser.Results.pause_dur;
 start_recording_buffer = parser.Results.start_recording_buffer;
 end_recording_buffer = parser.Results.end_recording_buffer;
 data_max = parser.Results.data_max;
+fill_with = parser.Results.fill_with;
 
 %% prepare data
 
@@ -89,7 +93,16 @@ total_dur = start_recording_buffer + ...
             length(trial_codes) * trial_dur;
 
 N = round(total_dur * fs); 
-data = data_max * rand([1, n_chans, 1, 1, 1, N]); 
+
+if strcmpi(fill_with, 'noise')
+    data = data_max * rand([1, n_chans, 1, 1, 1, N]); 
+elseif strcmpi(fill_with, 'zeros')
+    data = zeros([1, n_chans, 1, 1, 1, N]); 
+elseif strcmpi(fill_with, 'nan')
+    data = nan([1, n_chans, 1, 1, 1, N]); 
+else
+    error('filling data with "%s" not implemented', fill_with); 
+end
 
 t = start_recording_buffer;
 c = 1;
