@@ -1,4 +1,4 @@
-function tests = test_segmentation
+function tests = test_z_snr
     tests = functiontests(localfunctions);
 end
 
