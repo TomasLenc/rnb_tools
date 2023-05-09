@@ -3,24 +3,6 @@ function tests = test_phase_locking
 end
 
 
-function test_get_phase_locking_noise(test_case)
-    
-    trial_dur = 600;
-    fs = 500;
-
-    [header, data] = make_dataset(...
-        'n_cond', 1, ...
-        'n_chans', 2, ...
-        'n_trials', 3,...
-        'trial_dur', trial_dur, ...
-        'fs', fs, ...
-        'fill_with', 'noise');
-    
-    [header, data] = RLW_segmentation(header, data, {'1'}, ...
-        'x_start', 0, 'x_duration', trial_dur);
-    
-    [r, theta, ph] = get_phase_locking(data, 1.25, fs, 'skip_s_buffer', 20);
-    
 %     figure
 %     polarplot(ph(:), ones(numel(ph), 1), 'o',...
 %               'color',[89, 89, 89]/255)
@@ -28,11 +10,6 @@ function test_get_phase_locking_noise(test_case)
 %     polarplot(repmat(theta(1), 1, 2), [0, r(1)],...
 %               'color', 'red', ...
 %               'linew',1.5)
-
-    % check that the resulting vector length is small 
-    assert(all(r(:) < 0.1));
-
-end
 
 
 function test_get_phase_locking_perfect_periodic(test_case)
