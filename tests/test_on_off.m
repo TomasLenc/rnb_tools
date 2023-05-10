@@ -3,6 +3,23 @@ function tests = test_on_off
 end
 
 
+function test_get_on_off_invalid_input(test_case)
+
+        fs = 1000;
+        x = rand(1, fs); 
+        win_dur = 0.050; 
+        
+        fun = @()get_on_off(x, fs, win_dur);        
+        verifyError(test_case, fun, ...
+            'OnOff:InvalidInput');
+
+        fun = @()get_on_off(x, fs, win_dur, 'on_beat_pattern', [1 0 1 0]);        
+        verifyError(test_case, fun, ...
+            'OnOff:InvalidInput');
+
+end
+
+
 function test_get_on_off_zeros(test_case)
     
     trial_dur = 60;
@@ -10,7 +27,7 @@ function test_get_on_off_zeros(test_case)
 
     x = zeros(10, 64, 1, 1, 1, round(trial_dur * fs)); 
     
-    [on_off_contrast] = get_on_off(x, fs, 0.8, 0.050);
+    [on_off_contrast] = get_on_off(x, fs, 0.050, 'pulse_period_sec', 0.8);
     
     % check that the resulting vector length is small 
     assert(all(isnan(on_off_contrast(:))));
@@ -37,7 +54,7 @@ function test_get_on_off_perfect_periodic(test_case)
                     'ir', ir ...
                     );
                 
-    [on_off_contrast, on_val, off_val] = get_on_off(x, fs, 0.8, 0.050);
+    [on_off_contrast, on_val, off_val] = get_on_off(x, fs, 0.050, 'pulse_period_sec', 0.8);
     
     assert(on_val == 0.5);
     assert(off_val == 0);
@@ -65,7 +82,7 @@ function test_get_on_off_perfect_equal(test_case)
                     'ir', ir ...
                     );
                 
-    [on_off_contrast] = get_on_off(x, fs, 0.8, 0.050);
+    [on_off_contrast] = get_on_off(x, fs, 0.050, 'pulse_period_sec', 0.8);
     
     assert(on_off_contrast == 0);
     
@@ -91,7 +108,7 @@ function test_get_on_off_perfect_offbeat(test_case)
                     'ir', ir ...
                     );
                 
-    [on_off_contrast] = get_on_off(x, fs, 0.8, 0.050);
+    [on_off_contrast] = get_on_off(x, fs, 0.050, 'pulse_period_sec', 0.8);
     
     assert(on_off_contrast == -1);
     
@@ -128,7 +145,7 @@ function test_get_on_off_emphasis(test_case)
         x = []; 
         x(:, 1, 1, 1, 1, :) = repmat(x_trial, [10, 1]); 
 
-        [on_off_contrast] = get_on_off(x, fs, 0.8, 0.050);
+        [on_off_contrast] = get_on_off(x, fs, 0.050, 'pulse_period_sec', 0.8);
     
         assert(length(unique(on_off_contrast)) == 1);
         
@@ -143,11 +160,121 @@ function test_get_on_off_emphasis(test_case)
 end
 
 
+function test_get_on_off_emphasis_pattern1(test_case)
+    
+    fs = 1000;
+    
+    ir = get_square_kernel(fs, ...
+        'duration', 0.100, ...
+        'rampon', 0, ...
+        'rampoff', 0 ...
+        ); 
+    
+    emph_magns = [0, 0.1, 0.5, 1]; 
+    
+    res = nan(1, length(emph_magns)); 
+    
+    for i_emph=1:length(emph_magns)
+        
+        % make clean signal for the whole trial 
+        [x, t] = get_s(...
+                        [1 1 1 1 0 1 1 1 0 0 1 0], ...
+                        0.2, ...
+                        fs, ...
+                        'n_cycles', 8, ...
+                        'ir', ir, ...
+                        'emph_period', 4, ...
+                        'emph_magn', emph_magns(i_emph) ...
+                        );
+
+        [on_off_contrast_pattern] = get_on_off(x, fs, 0.050, ...
+            'on_beat_pattern', [1 0 0 0 1 0 0 0 1 0 0 0], ...
+            'off_beat_pattern', [0 0 1 0 0 0 1 0 0 0 1 0], ...
+            'grid_interval', 0.2 ...
+            );
+        
+        [on_off_contrast_period] = get_on_off(x, fs, 0.050, ...
+            'pulse_period_sec', 0.8...
+            );
+    
+        assert(on_off_contrast_pattern == on_off_contrast_period);
+        
+        res(i_emph) = on_off_contrast_pattern; 
+        
+    end
+    
+    % we should get increasing values of the on/off contrast with increasing
+    % on-beat emphasis
+    assert(all(sort(res) == res))
+    
+end
 
 
+function test_get_on_off_emphasis_pattern2(test_case)
+    
+    fs = 1000;
+
+    pat = [1 1 1 1 0 1 1 1 0 0 1 0]; 
+    
+    ir = get_square_kernel(fs, ...
+        'duration', 0.100, ...
+        'rampon', 0, ...
+        'rampoff', 0 ...
+        ); 
+    
+    % make clean signal for the whole trial 
+    [x, t] = get_s(...
+                    pat, ...
+                    0.2, ...
+                    fs, ...
+                    'n_cycles', 8, ...
+                    'ir', ir ...
+                    );
+        
+    [on_off_contast] = get_on_off(x, fs, 0.050, ...
+        'on_beat_pattern', pat, ...
+        'off_beat_pattern', ~pat, ...
+        'grid_interval', 0.2 ...
+        );
+
+    assert(on_off_contast == 1)
+    
+end
 
 
+function test_get_on_off_emphasis_pattern3(test_case)
+    
+    fs = 1000;
+    
+    ir = get_square_kernel(fs, ...
+        'duration', 0.100, ...
+        'rampon', 0, ...
+        'rampoff', 0 ...
+        ); 
+    
+    % make clean signal for the whole trial 
+    [x, t] = get_s(...
+                    [1 1 1 0 1 1 1 0 1 1 0 0], ...
+                    0.2, ...
+                    fs, ...
+                    'n_cycles', 8, ...
+                    'ir', ir ...
+                    );
+        
+    [on_off_contrast_pattern] = get_on_off(x, fs, 0.050, ...
+        'on_beat_pattern', [1 0 0 0 1 0 0 0 1 0 0 0], ...
+        'off_beat_pattern', [0 1 1 0 0 1 1 0 0 1 0 0], ...
+        'grid_interval', 0.2 ...
+        );
 
+    [on_off_contrast_period] = get_on_off(x, fs, 0.050, ...
+        'pulse_period_sec', 0.8...
+        );
+
+    assert(on_off_contrast_pattern == 0)
+    assert(on_off_contrast_period == (1 - 2/3) / (1 + 2/3))
+    
+end
 
 
 
