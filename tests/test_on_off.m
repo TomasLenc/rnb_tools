@@ -20,10 +20,10 @@ end
 
 function test_get_on_off_perfect_periodic(test_case)
     
-    fs = 500;
+    fs = 1000;
     
     ir = get_square_kernel(fs, ...
-        'duration', 0.050, ...
+        'duration', 0.025, ...
         'rampon', 0, ...
         'rampoff', 0 ...
         ); 
@@ -37,8 +37,10 @@ function test_get_on_off_perfect_periodic(test_case)
                     'ir', ir ...
                     );
                 
-    [on_off_contrast] = get_on_off(x, fs, 0.8, 0.050);
+    [on_off_contrast, on_val, off_val] = get_on_off(x, fs, 0.8, 0.050);
     
+    assert(on_val == 0.5);
+    assert(off_val == 0);
     assert(on_off_contrast == 1);
     
 end

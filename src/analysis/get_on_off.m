@@ -1,4 +1,6 @@
-function [on_off_contrast] = get_on_off(x, fs, pulse_period_sec, win_dur, varargin)
+function [on_off_contrast_all, on_val_all, off_val_all] = get_on_off(...
+                                x, fs, pulse_period_sec, win_dur, varargin...
+                                )
 % Calculate phase stability of narrowband-filtered signal phase across pulse 
 % positions. 
 % 
@@ -27,9 +29,12 @@ function [on_off_contrast] = get_on_off(x, fs, pulse_period_sec, win_dur, vararg
 % 
 % Returns 
 % -------
-% on_off_contrast : float
+% on_off_contrast_all : float
 %     Michelson contrast of mean signal value in the on- vs. off-beat windows. 
-
+% on_val_all : float
+%     Mean value of the signal averaged across all on-beat windows. 
+% off_val_all : float
+%     Mean value of the signal averaged across all off-beat windows. 
 
 parser = inputParser; 
 
@@ -52,35 +57,40 @@ shape = size(x);
 x_dur = size(x, ndims(x)) / fs; 
 pulse_pos_sec = [0 + pulse_phase_sec : pulse_period_sec : x_dur-1/fs]; 
 
-on_off_contrast = nan([shape(1:end-1), length(pulse_pos_sec)]); 
+on_val_all = nan([shape(1:end-1), length(pulse_pos_sec)]); 
+off_val_all = nan([shape(1:end-1), length(pulse_pos_sec)]); 
+on_off_contrast_all = nan([shape(1:end-1), length(pulse_pos_sec)]); 
 
 % go over each individual pulse position
 for i_pulse=1:length(pulse_pos_sec)
 
     % get mean feature value in the on-beat window
-    idx_start = round((pulse_pos_sec(i_pulse) + on_win_offset) * fs) + 1; 
+    idx_start = round((pulse_pos_sec(i_pulse) + on_win_offset) * fs); 
 
     index = repmat({':'}, 1, ndims(x)); 
-    index{end} = [idx_start : idx_start+win_n]; 
+    index{end} = [idx_start+1 : idx_start+win_n]; 
     val_on = mean(x(index{:}), ndims(x)); 
 
     % get mean feature value in the off-beat window
-    idx_start = round((pulse_pos_sec(i_pulse) + off_win_offset) * fs) + 1; 
+    idx_start = round((pulse_pos_sec(i_pulse) + off_win_offset) * fs); 
 
     index = repmat({':'}, 1, ndims(x)); 
-    index{end} = [idx_start : idx_start+win_n]; 
+    index{end} = [idx_start+1 : idx_start+win_n]; 
     val_off = mean(x(index{:}), ndims(x)); 
 
     % get Mitchelson contrast on-vs-off beat
     index = repmat({':'}, 1, ndims(x)); 
     index{end} = i_pulse; 
-    on_off_contrast(index{:}) = (val_on - val_off) ./ (val_on + val_off); 
-
+    
+    on_val_all(index{:}) = val_on;
+    off_val_all(index{:}) = val_off;
+    on_off_contrast_all(index{:}) = (val_on - val_off) ./ (val_on + val_off); 
     
 end
 
-
-on_off_contrast = mean(on_off_contrast, ndims(x)); 
+on_val_all = mean(on_val_all, ndims(x)); 
+off_val_all = mean(off_val_all, ndims(x)); 
+on_off_contrast_all = mean(on_off_contrast_all, ndims(x)); 
 
 
 
