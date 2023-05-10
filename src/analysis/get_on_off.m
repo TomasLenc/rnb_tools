@@ -49,9 +49,12 @@ function [on_off_contrast_all, on_val_all, off_val_all] = get_on_off(...
 % off_win_offset : float, optional, default=pulse_period_sec/2
 %     Offset of the off-beat window in seconds, with respect to the beat
 %     time. 
-% rectify : bool, optional, default=false
+% half_rectify : bool, optional, default=false
+%     If true, the signal will be half-wave rectified before any metrics are
+%     obtained (negative portions of the signal are set to 0). 
+% full_rectify : bool, optional, default=false
 %     If true, the signal will be full-wave rectified before any metrics are
-%     obtained. 
+%     obtained (absolute value of the signal is taken). 
 % verbose : bool, optional, default=false
 %     If true, diagnostics will be printed to the console. 
 % 
@@ -73,7 +76,8 @@ addParameter(parser, 'pulse_period_sec', nan);
 addParameter(parser, 'pulse_phase_sec', 0); 
 addParameter(parser, 'on_win_offset', 0); 
 addParameter(parser, 'off_win_offset', nan); 
-addParameter(parser, 'rectify', false); 
+addParameter(parser, 'half_rectify', false); 
+addParameter(parser, 'full_rectify', false); 
 addParameter(parser, 'verbose', false); 
 
 parse(parser, varargin{:});
@@ -85,7 +89,8 @@ pulse_period_sec = parser.Results.pulse_period_sec;
 pulse_phase_sec = parser.Results.pulse_phase_sec; 
 on_win_offset = parser.Results.on_win_offset; 
 off_win_offset = parser.Results.off_win_offset; 
-rectify = parser.Results.rectify; 
+half_rectify = parser.Results.half_rectify; 
+full_rectify = parser.Results.full_rectify; 
 verbose = parser.Results.verbose; 
 
 if isnan(off_win_offset) && ~isnan(pulse_period_sec)
@@ -121,6 +126,10 @@ if ~xor(win_def_pattern_params_provided, win_def_period_params_provided)
     end
 end
 
+if half_rectify && full_rectify
+    error('cannot set both "half_rectify" and "full_rectify" to be true!'); 
+end
+
 win_n = round(win_dur * fs); 
 
 shape = size(x); 
@@ -128,8 +137,10 @@ shape = size(x);
 x_dur = shape(end) / fs; 
 
 % full-wave rectify the signal if requested
-if rectify
+if full_rectify
     x = abs(x); 
+elseif half_rectify
+    x = max(x, 0); 
 end
 
 % define starting times for all on- and off-beat windows 
