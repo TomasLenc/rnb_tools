@@ -49,6 +49,9 @@ function [on_off_contrast_all, on_val_all, off_val_all] = get_on_off(...
 % off_win_offset : float, optional, default=pulse_period_sec/2
 %     Offset of the off-beat window in seconds, with respect to the beat
 %     time. 
+% rectify : bool, optional, default=false
+%     If true, the signal will be full-wave rectified before any metrics are
+%     obtained. 
 % verbose : bool, optional, default=false
 %     If true, diagnostics will be printed to the console. 
 % 
@@ -70,6 +73,7 @@ addParameter(parser, 'pulse_period_sec', nan);
 addParameter(parser, 'pulse_phase_sec', 0); 
 addParameter(parser, 'on_win_offset', 0); 
 addParameter(parser, 'off_win_offset', nan); 
+addParameter(parser, 'rectify', false); 
 addParameter(parser, 'verbose', false); 
 
 parse(parser, varargin{:});
@@ -81,6 +85,7 @@ pulse_period_sec = parser.Results.pulse_period_sec;
 pulse_phase_sec = parser.Results.pulse_phase_sec; 
 on_win_offset = parser.Results.on_win_offset; 
 off_win_offset = parser.Results.off_win_offset; 
+rectify = parser.Results.rectify; 
 verbose = parser.Results.verbose; 
 
 if isnan(off_win_offset) && ~isnan(pulse_period_sec)
@@ -116,13 +121,16 @@ if ~xor(win_def_pattern_params_provided, win_def_period_params_provided)
     end
 end
 
-%% 
-
 win_n = round(win_dur * fs); 
 
 shape = size(x); 
 
 x_dur = shape(end) / fs; 
+
+% full-wave rectify the signal if requested
+if rectify
+    x = abs(x); 
+end
 
 % define starting times for all on- and off-beat windows 
 if win_def_period_params_provided
