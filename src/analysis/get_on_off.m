@@ -1,6 +1,5 @@
-function [on_off_contrast_all, on_val_all, off_val_all] = get_on_off(...
-                                x, fs, win_dur, varargin...
-                                )
+function [on_off_contrast_all, on_val_all, off_val_all, on_pos_sec, off_pos_sec] = ...
+                                get_on_off(x, fs, win_dur, varargin)
 % Calculate the contrast in mean signal value, taken from windows starting at
 % requested 'on-beat' positions and 'off-beat' positions. 
 % 
@@ -131,6 +130,9 @@ if half_rectify && full_rectify
 end
 
 win_n = round(win_dur * fs); 
+
+% in case x is 1d column, this will fix it
+x = ensure_row(x, 'verbose', false); 
 
 shape = size(x); 
 
