@@ -1,4 +1,4 @@
-function cmw = get_wavelet_kernel(f, sigma, fs, varargin)
+function [cmw, fig_ir] = get_wavelet_kernel(f, sigma, fs, varargin)
 % Prepare complex morlet wavelet in the time domain, based on the requested
 % center frequency and standard deviation of the gaussian in the frequency
 % domain. 
@@ -87,10 +87,9 @@ fwhmF = fwhmF_upper - fwhmF_lower;
 
 if do_plot
     
-    figure
+    fig_ir = figure;
 
     ax = subplot(2, 1, 1); 
-
     cmw_norm = cmw / max(gwin); 
     plot(t(1:1:end), real(cmw_norm(1:1:end))); 
     hold on
@@ -107,7 +106,6 @@ if do_plot
     plot([fwhmF_lower, fwhmF_lower], [0,1], 'r:'); 
     plot([fwhmF_upper, fwhmF_upper], [0,1], 'r:'); 
     title(sprintf('fwhmF=%.2fHz', fwhmF)); 
-    ax = gca; 
     ax.XLim = [0, cmw_plot_maxfreq]; 
     ax.XTick = [f - f/2, f, f + f/2]; 
     ax.YTick = []; 
@@ -115,6 +113,8 @@ if do_plot
     fprintf('f = %.1f Hz \t fwhmT = %.3f sec \t fwhmF = %.3f Hz \n', ...
             f, fwhmT, fwhmF); 
 
+else
+   fig_ir = [];  
 end
 
 

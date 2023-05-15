@@ -1,4 +1,4 @@
-function [r, theta, ph] = get_phase_locking(x, f, fs, varargin)
+function [r, theta, ph, fig_ir] = get_phase_locking(x, f, fs, varargin)
 % Calculate phase stability of narrowband-filtered signal phase across pulse 
 % positions. 
 % 
@@ -37,6 +37,7 @@ parser = inputParser;
 
 addParameter(parser, 'sigma', f/2); 
 addParameter(parser, 'plot_ir', false); 
+addParameter(parser, 'verbose', false); 
 addParameter(parser, 'data_type', 'continuous'); 
 addParameter(parser, 'pulse_period_sec', 1/f); 
 addParameter(parser, 'pulse_phase_sec', 0); 
@@ -46,6 +47,7 @@ parse(parser, varargin{:});
 
 sigma = parser.Results.sigma; 
 plot_ir = parser.Results.plot_ir; 
+verbose = parser.Results.verbose; 
 data_type = parser.Results.data_type; 
 pulse_period_sec = parser.Results.pulse_period_sec; 
 pulse_phase_sec = parser.Results.pulse_phase_sec; 
@@ -55,7 +57,7 @@ skip_s_buffer = parser.Results.skip_s_buffer;
 %% phase-locking analysis
 
 % band-pass filter the data
-cmw = get_wavelet_kernel(f, sigma, fs, 'do_plot', plot_ir);
+[cmw, fig_ir] = get_wavelet_kernel(f, sigma, fs, 'do_plot', plot_ir);
 
 % Depending on whether the data is discrete or continuous, we have two
 % approaches to calculating the phase. 
@@ -92,7 +94,7 @@ elseif strcmpi(data_type, 'continuous')
     
     % allocate 
     shape = size(x); 
-    convers = nan([shape(1:end-1), n_conv]); 
+    convres = nan([shape(1:end-1), n_conv]); 
     
     % prepare index vector as cell, e.g. {1,1,1,1,':'} 
     nv = ndims(x) - 1;  % exclude last dimension
@@ -100,7 +102,7 @@ elseif strcmpi(data_type, 'continuous')
     idx_while_loop = [repmat({1}, 1, nv), {':'}]; 
     while ~ready
       
-        convers(idx_while_loop{:}) = ifft(...
+        convres(idx_while_loop{:}) = ifft(...
                        ensure_row(cmwX) .* ...
                        ensure_row(squeeze(dataX(idx_while_loop{:})))...
                        ); 
@@ -125,13 +127,13 @@ elseif strcmpi(data_type, 'continuous')
     end    
   
     index = repmat({':'}, 1, ndims(x)); 
-    index{end} = [hn_cmw : size(convers, ndims(x))-hn_cmw+1]; 
-    convers = convers(index{:});
+    index{end} = [hn_cmw : size(convres, ndims(x))-hn_cmw+1]; 
+    convres = convres(index{:});
     
     % In case of continuous process, we have to estimate the phase
     % (which is a mess if we have multicomponent impulse response!). 
     % A typical way to do this is filter-hilbert. 
-    ph = angle(convers); 
+    ph = angle(convres); 
     
     % Then we want to see what the phase of the system was at the
     % metric pulse positions (we would like to see consistent phase value 
@@ -167,7 +169,11 @@ theta = [];
 theta(index{:}) = angle(mean(exp(1j * ph), ndims(x))); 
 
 
-
+if verbose
+    fprintf('\n---------------------------\n'); 
+    fprintf('data duration: %.3f sec\n', x_dur); 
+    fprintf('skipping first and last %.3f sec\n\n', skip_s_buffer); 
+end
 
 
 
