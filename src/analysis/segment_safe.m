@@ -41,8 +41,20 @@ if isempty(x_duration)
 end
 %% 
 
+% only look at unique events
+events_in_header = header.events(1);
+for i_event=1:length(header.events)
+    if ~(...
+        ismember(header.events(i_event).code, {events_in_header.code}) && ...
+        ismember(header.events(i_event).latency, [events_in_header.latency]) && ...
+        ismember(header.events(i_event).epoch, [events_in_header.epoch])...
+        )
+        events_in_header(end+1) = header.events(i_event); 
+    end
+end
+
 % find matching event codes
-codes_in_header = {header.events.code};
+codes_in_header = {events_in_header.code};
 idx_matching_event = find(cellfun(@(x) ismember(x, segment_codes), ...
                           codes_in_header));
 
@@ -61,9 +73,9 @@ out_of_range_events = [];
 
 for i_event=1:n_events
       
-    event_code = header.events(idx_matching_event(i_event)).code;
-    event_epoch = header.events(idx_matching_event(i_event)).epoch;
-    ep_latency = header.events(idx_matching_event(i_event)).latency + x_start;
+    event_code = events_in_header(idx_matching_event(i_event)).code;
+    event_epoch = events_in_header(idx_matching_event(i_event)).epoch;
+    ep_latency = events_in_header(idx_matching_event(i_event)).latency + x_start;
     ep_onset_idx = round((ep_latency - header.xstart) / header.xstep); 
     
     if ep_onset_idx+n_x > header.datasize(end) || ep_onset_idx+1 < 1 
@@ -93,7 +105,7 @@ for i_event=1:n_events
         data(event_epoch, :, :, :, :, ep_onset_idx+1 : ep_onset_idx+n_x);
     
     % check which other events fall into this new epoch
-    other_events = header.events;
+    other_events = events_in_header;
     other_events(idx_matching_event(i_event)) = [];
     
     other_events_idx = ...
@@ -136,7 +148,7 @@ for i_event=1:n_events
         
         events_out(c_event_out).latency = ...
             other_events(other_events_idx(i_additional_event)).latency - ...
-            header.events(idx_matching_event(i_event)).latency;
+            events_in_header(idx_matching_event(i_event)).latency;
         
         events_out(c_event_out).epoch = i_event;
         
