@@ -32,10 +32,14 @@ addParameter(parser, 't', []);
 addParameter(parser, 'y_max', Inf); 
 addParameter(parser, 'sound_fs', []); 
 addParameter(parser, 'sound_s', []); 
+addParameter(parser, 'win_start_times', []); 
+addParameter(parser, 'win_end_times', []); 
 addParameter(parser, 'linew', 2); 
 addParameter(parser, 'col', [0, 0, 0]); 
 addParameter(parser, 'col_sound', [0.7, 0.7, 0.7]); 
+addParameter(parser, 'col_win', [240, 174, 93]/255); 
 addParameter(parser, 'ci', false); 
+addParameter(parser, 'ci_method', 'analytical'); % analytical, boot
 addParameter(parser, 'fontsize', 12); 
 
 parse(parser, varargin{:}); 
@@ -46,10 +50,14 @@ t = parser.Results.t;
 y_max = parser.Results.y_max; 
 sound_s = parser.Results.sound_s; 
 sound_fs = parser.Results.sound_fs; 
+win_start_times = parser.Results.win_start_times; 
+win_end_times = parser.Results.win_end_times; 
 col = parser.Results.col; 
 col_sound = parser.Results.col_sound; 
+col_win = parser.Results.col_win; 
 linew = parser.Results.linew; 
 plot_ci = parser.Results.ci; 
+ci_method = parser.Results.ci_method; 
 fontsize = parser.Results.fontsize; 
 
 if isempty(fs) && isempty(t)
@@ -67,42 +75,59 @@ end
 hold(ax,'on');
 
 % if x is 1D, make sure it's a row vector
-if iscolumn(x)
-    x = x'; 
-end
+x = ensure_row(x);
 
 if isempty(t)
     t = [0 : size(x, 2) - 1] / fs;
 end
 
+% average epochs (if any)
+x_avg = mean(x, 1); 
+
+% plot sound
+if ~isempty(sound_fs) && ~isempty(sound_s)
+    t_s = [0 : length(sound_s)-1] / sound_fs; 
+    if isnumeric(y_max) && ~isinf(y_max)
+     sound_s = sound_s / max(sound_s) * y_max;    
+    else
+        x_range = max(x_avg) - min(x_avg);
+        sound_s = sound_s - min(sound_s); 
+        sound_s = sound_s / max(sound_s);
+        sound_s = sound_s * x_range + min(x_avg); 
+    end
+    h_sound = plot(ax, t_s, sound_s, 'linew', linew); 
+    h_sound.Color = col_sound; 
+end
+
+% plot windows of interest 
+if ~isempty(win_start_times) && ~isempty(win_end_times)
+    plot_erp_windows(ax, x_avg, fs,...
+        win_start_times, win_end_times, col_win);
+end
+
 % if multiple epochs or subjects were passed, get mean and CIs
-if size(x, 1) > 1 && ~plot_ci
-    % bootstrap confidence intervals [0.7,0.7,0.7]
-    [ci_high, ci_low] = bootstrapCI(x, par.nBoot); 
-    t_sem = [t, fliplr(t)]; 
+if size(x, 1) > 1 && plot_ci
+    if strcmp(ci_method, 'boot')
+        % bootstrap confidence intervals [0.7,0.7,0.7]
+        [ci_high, ci_low] = bootstrapCI(x, par.nBoot); 
+    elseif strcmp(ci_method, 'analytical')
+        ci = std(x, [], 1) / sqrt(size(x, 1)) * norminv(1-0.05);
+        ci_high = x_avg + ci; 
+        ci_low = x_avg - ci;
+    else 
+        error('CI method "%s" not implemented', ci_method);
+    end
+    t_ci = [t, fliplr(t)]; 
     ci = [ci_high, fliplr(ci_low)]; 
     % plot CIs as shaded regions
-    fill(ax, t_sem, ci, col, ...
+    fill(ax, t_ci, ci, col, ...
         'facealpha',0.3, ...
         'LineStyle','none')
 else
     ci = mean(x,1); 
 end
 
-% average epochs (if any)
-x = mean(x, 1); 
-
-if ~isempty(sound_fs) && ~isempty(sound_s)
-    t_s = [0 : length(sound_s)-1] / sound_fs; 
-    if isfinite(y_max)
-        sound_s = sound_s/max(sound_s)*y_max;    
-    else
-        sound_s = sound_s/max(sound_s)*max(x)/2; 
-    end
-    plot(ax,t_s,sound_s,'linew',linew,'color',col_sound); 
-end
-
-h = plot(ax, t, x,...
+h = plot(ax, t, x_avg,...
     'color',col,...
     'linewidth',linew); 
 
