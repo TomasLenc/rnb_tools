@@ -16,7 +16,7 @@ function x = add_signal_noise(x_clean, noise, snr)
 % x : array_like
 %     Mixed signal and noise with the requested SNR. 
 
-x_clean_rms = rms(x_clean); 
+x_clean_rms = rms(x_clean, ndims(x_clean)); 
 noise_rms = rms(noise, ndims(noise)); 
 noise_gain = (x_clean_rms ./ noise_rms) / snr; 
 noise = noise .* noise_gain; 
