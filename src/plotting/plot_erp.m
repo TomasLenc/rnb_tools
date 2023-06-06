@@ -39,7 +39,7 @@ addParameter(parser, 'col', [0, 0, 0]);
 addParameter(parser, 'col_sound', [0.7, 0.7, 0.7]); 
 addParameter(parser, 'col_win', [240, 174, 93]/255); 
 addParameter(parser, 'ci', false); 
-addParameter(parser, 'ci_method', 'analytical'); % analytical, boot
+addParameter(parser, 'ci_type', 'confint'); % sem, confint
 addParameter(parser, 'fontsize', 12); 
 
 parse(parser, varargin{:}); 
@@ -57,7 +57,7 @@ col_sound = parser.Results.col_sound;
 col_win = parser.Results.col_win; 
 linew = parser.Results.linew; 
 plot_ci = parser.Results.ci; 
-ci_method = parser.Results.ci_method; 
+ci_type = parser.Results.ci_type; 
 fontsize = parser.Results.fontsize; 
 
 if isempty(fs) && isempty(t)
@@ -82,52 +82,40 @@ if isempty(t)
 end
 
 % average epochs (if any)
-x_avg = mean(x, 1); 
-
-% plot sound
-if ~isempty(sound_fs) && ~isempty(sound_s)
-    t_s = [0 : length(sound_s)-1] / sound_fs; 
-    if isnumeric(y_max) && ~isinf(y_max)
-     sound_s = sound_s / max(sound_s) * y_max;    
-    else
-        x_range = max(x_avg) - min(x_avg);
-        sound_s = sound_s - min(sound_s); 
-        sound_s = sound_s / max(sound_s);
-        sound_s = sound_s * x_range + min(x_avg); 
-    end
-    h_sound = plot(ax, t_s, sound_s, 'linew', linew); 
-    h_sound.Color = col_sound; 
-end
-
-% plot windows of interest 
-if ~isempty(win_start_times) && ~isempty(win_end_times)
-    plot_erp_windows(ax, x_avg, fs,...
-        win_start_times, win_end_times, col_win);
-end
+x_grand = mean(x, 1); 
 
 % if multiple epochs or subjects were passed, get mean and CIs
 if size(x, 1) > 1 && plot_ci
-    if strcmp(ci_method, 'boot')
-        % bootstrap confidence intervals [0.7,0.7,0.7]
-        [ci_high, ci_low] = bootstrapCI(x, par.nBoot); 
-    elseif strcmp(ci_method, 'analytical')
-        ci = std(x, [], 1) / sqrt(size(x, 1)) * norminv(1-0.05);
-        ci_high = x_avg + ci; 
-        ci_low = x_avg - ci;
-    else 
-        error('CI method "%s" not implemented', ci_method);
+    sem = std(x, [], 1) ./ sqrt(size(x, 1)); 
+    ci = norminv(1 - 0.05/2) * sem; 
+    if strcmp(ci_type, 'confint')
+        ci_low = x_grand - ci; 
+        ci_high = x_grand + ci; 
+    elseif strcmp(ci_type, 'sem')
+        ci_low = x_grand - sem; 
+        ci_high = x_grand + sem; 
+    else
+        error('ci type "%s" not recognized', ci_type); 
     end
-    t_ci = [t, fliplr(t)]; 
-    ci = [ci_high, fliplr(ci_low)]; 
     % plot CIs as shaded regions
-    fill(ax, t_ci, ci, col, ...
+    fill(ax, [t, fliplr(t)], [ci_high, fliplr(ci_low)], col, ...
         'facealpha',0.3, ...
         'LineStyle','none')
 else
     ci = mean(x,1); 
 end
 
-h = plot(ax, t, x_avg,...
+if ~isempty(sound_fs) && ~isempty(sound_s)
+    t_s = [0 : length(sound_s)-1] / sound_fs; 
+    if isfinite(y_max)
+        sound_s = sound_s/max(sound_s)*y_max;    
+    else
+        sound_s = sound_s/max(sound_s)*max(x_grand)/2; 
+    end
+    plot(ax,t_s,sound_s,'linew',linew,'color',col_sound); 
+end
+
+h = plot(ax, t, x_grand,...
     'color',col,...
     'linewidth',linew); 
 
