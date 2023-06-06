@@ -157,7 +157,7 @@ elseif win_def_pattern_params_provided
     assert(length(on_beat_pattern) == length(off_beat_pattern)); 
     
     pattern_dur = round(length(on_beat_pattern) * grid_interval, 10); 
-    n_patterns_trial = floor(x_dur / pattern_dur); 
+    n_patterns_trial = round(x_dur / pattern_dur); 
     
     on_beat_pattern_trial = repmat(on_beat_pattern, 1, n_patterns_trial);   
     on_pos_sec = grid_interval * (find(on_beat_pattern_trial) - 1); 
@@ -178,6 +178,8 @@ for i_pulse=1:length(on_pos_sec)
     % get mean feature value in the on-beat window
     idx_start = round(on_pos_sec(i_pulse) * fs); 
     if idx_start + win_n > shape(end)
+        warning('on window %.3f - %.3f s out of range...terminating loop',...
+                on_pos_sec(i_pulse), on_pos_sec(i_pulse) + win_dur); 
         break
     end
     index = repmat({':'}, 1, ndims(x)); 
@@ -194,6 +196,8 @@ for i_pulse=1:length(off_pos_sec)
     % get mean feature value in the off-beat window
     idx_start = round(off_pos_sec(i_pulse) * fs); 
     if idx_start + win_n > shape(end)
+        warning('off window %.3f - %.3f s out of range...terminating loop',...
+                off_pos_sec(i_pulse), off_pos_sec(i_pulse) + win_dur); 
         break
     end
     index = repmat({':'}, 1, ndims(x)); 
