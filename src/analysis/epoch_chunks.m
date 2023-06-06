@@ -5,11 +5,12 @@ function x_chunked = epoch_chunks(x, fs, chunk_duration, varargin)
 parser = inputParser; 
 
 addParameter(parser, 'start', 0)
+addParameter(parser, 'verbose', false)
 
 parse(parser, varargin{:})
 
 start_time = parser.Results.start; 
-
+verbose = parser.Results.verbose; 
 
 shape = size(x); 
 
@@ -41,9 +42,11 @@ end
 % when the input is simply a 1xN vector, it's a bit annoying to have the output
 % with shape [n_chunks, 1, N]. If that's the case, let's squeeze the thing...
 if ndims(x) == 2 && size(x, 1) == 1
-    fprintf('-----------------------------------------------------------\n'); 
-    fprintf('segmentation: squeezing chunked output to make life easier :)\n'); 
-    fprintf('-----------------------------------------------------------\n\n'); 
+    if verbose
+        fprintf('-----------------------------------------------------------\n'); 
+        fprintf('segmentation: squeezing chunked output to make life easier :)\n'); 
+        fprintf('-----------------------------------------------------------\n\n'); 
+    end
     x_chunked = squeeze(x_chunked); 
 end
 
