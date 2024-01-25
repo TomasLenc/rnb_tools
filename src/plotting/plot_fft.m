@@ -1,4 +1,34 @@
 function plot_fft(freq, mX, varargin)
+% Plots magnitude spectra. 
+%   
+%   Parameters
+%   ----------
+%   freq :  array_like
+%       Vector of frequencies in Hz. 
+%   mX : array_like
+%       Vector of FFT magniudes (one per frequency bin). 
+%   maxfreqlim : float, default=5.1
+%       Maximum frequency that will be plotted. 
+%   frex_meter_rel : array_like, optional 
+%       Meter/beat/whatever-related frequencies. 
+%   frex_meter_unrel : array_like, optional 
+%       Meter/beat/whatever-unrelated frequencies. 
+%   ax : axis_object, optional 
+%       Axis handle to plot in. 
+%   linew : float, optional, default=1.7
+%       Line width. 
+%   fontsize : float, optional, default=12
+%       Font sizwe. 
+%   col_meter_rel : [float, float, float], optional, default=[222 45 38]/255
+%       RGB triplet to use as a color for meter-related frequwncies. 
+%   col_meter_unrel : [float, float, float], optional, default=[49, 130, 189]/255
+%       RGB triplet to use as a color for meter-unrelated frequwncies. 
+%   col_neutral : [float, float, float], optional, default=[.5 .5 .5]
+%       RGB triplet to use as a baseline color for all frequencies. 
+%   
+%   Returns
+%   -------
+%   -
 
 parser = inputParser; 
 
