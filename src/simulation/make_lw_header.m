@@ -1,4 +1,4 @@
-function header = make_header(varargin)
+function header = make_lw_header(varargin)
 
 parser = inputParser;
 
