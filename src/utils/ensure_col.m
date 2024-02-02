@@ -14,7 +14,7 @@ if isempty(x)
 elseif iscolumn(x)
     return
 elseif isrow(x)
-    x = x';  
+    x = x.';  
     return
 else
     if verbose
