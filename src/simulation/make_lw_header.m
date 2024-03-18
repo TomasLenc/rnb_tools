@@ -17,8 +17,21 @@ n_chans = parser.Results.n_chans;
 events = parser.Results.events;
 
 chanlocs = [];
+if ~isempty(data) && isnan(n_chans)
+    n_chans = size(data, 2); 
+end
 for i=1:n_chans
     chanlocs(i).labels = sprintf('chan%d', i);
+    chanlocs(i).topo_enabled = false; 
+    chanlocs(i).SEEG_enabled = false; 
+end
+
+if isempty(events)
+    for i_trial=1:size(data, 1)
+        events(i_trial).code = 'trial';
+        events(i_trial).latency = 0;
+        events(i_trial).epoch = i_trial;
+    end
 end
 
 header = [];
