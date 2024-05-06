@@ -4,8 +4,8 @@ function [amp_out] = get_amp_summary(mX, freq, frex, varargin)
 % Parameters
 % ----------
 % mX : array_like, shape=[..., frequency]
-%     Raw (not noise-subtracted!!!) magnitude spectra with frequency as the 
-%     last dimension. 
+%     Noise-subtracted magnitude spectra with frequency as the last
+%     dimension.
 % freq : array_like
 %     Frequencies for the FFT. 
 % frex : array_like
