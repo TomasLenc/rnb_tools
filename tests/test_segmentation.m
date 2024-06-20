@@ -348,22 +348,39 @@ function test_segment_safe_resegment_too_long_ignore(test_case)
         'x_duration', trial_dur + pause_dur + 2, ...
         'ignore_out_of_range', true);
     
+    % we should have 3 events in the output
+    assert(length(header_ep.events) == 3);
+    
+    % but only two epochs in the data
+    assert(size(data_ep, 1) == 2);
+    
+    % first, there should be event code "1". Everything fine. 
     assert(isequal(...
         header_ep.events(1),...
         struct('code', '1', 'latency', 0, 'epoch', 1)...
         )); 
+    
+    % But for the first epoch, there was an overlaping event with code "2".
+    % Now we didn't ask to segment based on code "2" so the event will be
+    % registered in the output
     assert(isequal(...
         header_ep.events(2), ...
         struct('code', '2', 'latency', trial_dur + pause_dur, 'epoch', 1)...
         ));     
+    
+    % The second epoch is based on the following trigger "3" and even
+    % though there is an overlap with the following trigger "4" within the
+    % duration of the epoch, that one is ignored since it's one of the
+    % codes used for the current segmentation (the function "knows" this is
+    % just the following epoch)
     assert(isequal(...
         header_ep.events(3), ...
         struct('code', '3', 'latency', 0, 'epoch', 2)...
         )); 
     
-    assert(length(header_ep.events) == 3);
-    assert(size(data_ep, 1) == 2);
-    
+    % another check - the simualtino function placed an impulse in the data
+    % at the start of each trial - we can make sure we got the correct data
+    % samples to start the trial 
     idx0 = round(ep_buffer / header_ep.xstep + 1); 
     assert(isequal(data_ep(:, 1, 1, 1, 1, idx0), [1; 3]));
 
@@ -391,21 +408,47 @@ function test_segment_safe_resegment_too_long_ignore(test_case)
 end
 
 
-% 
-% 
-% importLetswave(6);
-% if ~isdir('tmp')
-%     mkdir('tmp');
-% end
-% header.name = 'test_dataset';
-% CLW_save('tmp', header, data);
-% % CLW_save('tmp', header_ep, data_ep);
-% importLetswave(7);
-% cd tmp
-% letswave
-% 
-% cd ..
-% rmdir('tmp', 's');
-% importLetswave(6);
-% 
-% 
+
+function test_segment_safe_additional_event_fields(test_case)
+    % Same test rationale as above, but this time we create an additional
+    % field in the events structure of the intput header. The field should
+    % be carreid into the output header after epoching. 
+    
+    trial_dur = 10;
+    pause_dur = 2;
+    start_recording_buffer = 5;
+    end_recording_buffer = 0;
+    ep_buffer = 1;
+
+    [header, data] = make_lw_dataset(...
+        'event_sequence', {'1', '2', '3', '4'}, ...
+        'trial_dur', trial_dur, ...
+        'pause_dur', pause_dur,...
+        'start_recording_buffer', start_recording_buffer, ...
+        'end_recording_buffer', end_recording_buffer, ...
+        'fs', 1000);
+    
+    header.events(1).polarity = 'a';  
+    header.events(2).polarity = 'b';  
+    header.events(3).polarity = 'c';  
+    header.events(4).polarity = 'd';  
+    
+    [header_ep, data_ep] = segment_safe(...
+        header, data, {'1', '3', '4'},...
+        'x_start', -ep_buffer, ...
+        'x_duration', trial_dur + pause_dur + 2, ...
+        'ignore_out_of_range', true);
+    
+    assert(isequal(...
+        header_ep.events(1),...
+        struct('code', '1', 'latency', 0, 'epoch', 1, 'polarity', 'a')...
+        )); 
+    assert(isequal(...
+        header_ep.events(2), ...
+        struct('code', '2', 'latency', trial_dur + pause_dur, 'epoch', 1, 'polarity', 'b')...
+        ));     
+    assert(isequal(...
+        header_ep.events(3), ...
+        struct('code', '3', 'latency', 0, 'epoch', 2, 'polarity', 'c')...
+        )); 
+end

@@ -53,31 +53,57 @@ for i_event=1:length(header.events)
     end
 end
 
-% find matching event codes
+% find event codes matching the ones requested for segmentation by the user
 codes_in_header = {events_in_header.code};
+
 idx_matching_event = find(cellfun(@(x) ismember(x, segment_codes), ...
                           codes_in_header));
 
 n_events = length(idx_matching_event);
+
+% number of samples for the segment
 n_x = round(x_duration / header.xstep);
 
+% allocate data output with correct shape
 data_out = nan(...
     n_events, size(data, 2), size(data, 3), size(data, 4), size(data, 5), n_x...
     ); 
-                      
-events_out = [];
+       
+% allocate output event structure  
+names = fieldnames(events_in_header); 
+events_out = cell2struct(cell(numel(names),1), names); 
+
+% inti counter for output event sturct
 c_event_out = 1;
+
+% also we need another counter that will keep track of which epoch in the
+% output array we are currently at. Note that this can be different from
+% the event number as some events may be skipped due to being out-of-range.
 c_epoch_out = 1;
 
+% Here we will save the indices of events that ended up being out of range
+% of the original data array. Later, we can use this to remove those epochs
+% from the output data array (as there will be nothing assigned, just nans
+% that we allocated)
 out_of_range_events = [];
 
+% go over each event that contains a code matching what the user wants to
+% use for segmentation  
 for i_event=1:n_events
       
-    event_code = events_in_header(idx_matching_event(i_event)).code;
-    event_epoch = events_in_header(idx_matching_event(i_event)).epoch;
-    ep_latency = events_in_header(idx_matching_event(i_event)).latency + x_start;
+    % take that matching event out of the header
+    event = events_in_header(idx_matching_event(i_event)); 
+
+    % check the epoch where this event is in the input data array
+    event_epoch = event.epoch;
+    
+    % the latency where segmentation will start 
+    ep_latency = event.latency + x_start;
+    
+    % get the sample index for the begining of the segment 
     ep_onset_idx = round((ep_latency - header.xstart) / header.xstep); 
     
+    % check if the start index is out of data range and issue warning/error
     if ep_onset_idx+n_x > header.datasize(end) || ep_onset_idx+1 < 1 
         if ignore_out_of_range
             warning(...
@@ -101,10 +127,28 @@ for i_event=1:n_events
         end
     end
     
+    % assign the data setment to the output array
     data_out(i_event, :, :, :, :, :) = ...
         data(event_epoch, :, :, :, :, ep_onset_idx+1 : ep_onset_idx+n_x);
     
-    % check which other events fall into this new epoch
+    % --------------------------------------------------------------------
+    % write event to output structure 
+    
+    events_out(c_event_out) = event; 
+    
+    % fix latency to 0
+    events_out(c_event_out).latency = 0; 
+    
+    % fix epoch number to the correct epoch in the output data array
+    events_out(c_event_out).epoch = c_epoch_out;
+    
+    % update the event counter
+    c_event_out = c_event_out + 1;
+    
+    % --------------------------------------------------------------------
+    % other events 
+    
+    % check if there are any other events falling into this new epoch
     other_events = events_in_header;
     other_events(idx_matching_event(i_event)) = [];
     
@@ -114,14 +158,20 @@ for i_event=1:n_events
              [other_events.latency] < ep_latency + x_duration ...
              ]);
     
+    % It may happen that the next/prev event that the user is asking to use
+    % for segmentation falls into the current epoch (this can be for
+    % example when one is segmenting trials with a buffer time before/after
+    % the trial, and there is prev/next trial event that falls into that
+    % time range). Let's get rid of those events. 
     other_events_idx_ignore = find(...
                       cellfun(@(x) ismember(x, segment_codes), ...
                       {other_events(other_events_idx).code})...
                       );
                   
+    % ignore the events that are used for the current epoching (and issue
+    % warning)
     if ~isempty(other_events_idx_ignore)
-        % ignore the events that are used for the current epoching        
-          
+        
         removed_codes = join(...
             {other_events(other_events_idx(other_events_idx_ignore)).code},...
             ', '...
@@ -133,35 +183,35 @@ for i_event=1:n_events
         other_events_idx(other_events_idx_ignore) = [];
                      
     end
-    
-    events_out(c_event_out).code = event_code;
-    events_out(c_event_out).latency = 0;
-    events_out(c_event_out).epoch = c_epoch_out;
-    
-    c_event_out = c_event_out + 1;
-    
+       
     % write additional events that fall into the segment
-    for i_additional_event=1:length(other_events_idx)
-        
-        events_out(c_event_out).code = ...
-            other_events(other_events_idx(i_additional_event)).code;
-        
+    for i_add_event=1:length(other_events_idx)
+                
+        events_out(c_event_out) = other_events(...
+                                        other_events_idx(i_add_event)); 
+                
+        % fix latency so it is wrt the event used for segmentation 
         events_out(c_event_out).latency = ...
-            other_events(other_events_idx(i_additional_event)).latency - ...
-            events_in_header(idx_matching_event(i_event)).latency;
-        
+                events_out(c_event_out).latency - ...
+                events_in_header(idx_matching_event(i_event)).latency;
+
+        % set the correct epoch in the output array
         events_out(c_event_out).epoch = i_event;
         
+        % update the counter for output event structure 
         c_event_out = c_event_out + 1;
         
     end
     
     c_epoch_out = c_epoch_out + 1;
-    
+        
 end
 
+% remove slices that correcpond to events which ended up giving out of
+% range epochs (there are just nans there in the output array anyway)
 data_out(out_of_range_events, :, :, :, :, :) = [];
 
+% put the output header together
 header_out = header;
 header_out.datasize = size(data_out);
 header_out.events = events_out;
