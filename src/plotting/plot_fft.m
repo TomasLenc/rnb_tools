@@ -1,4 +1,4 @@
-function plot_fft(freq, mX, varargin)
+function [f, ax] = plot_fft(freq, mX, varargin)
 % Plots magnitude spectra. 
 %   
 %   Parameters
@@ -60,6 +60,7 @@ freq = ensure_row(freq);
 frex_meter_rel = ensure_row(frex_meter_rel); 
 frex_meter_unrel = ensure_row(frex_meter_unrel); 
 
+f = []; 
 if isempty(ax)
     f = figure; 
     ax = axes(f); 
