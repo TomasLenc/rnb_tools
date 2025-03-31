@@ -41,6 +41,8 @@ if isempty(x_duration)
 end
 %% 
 
+fprintf('\nchecking for event duplicates... ');
+
 % only look at unique events
 events_in_header = header.events(1);
 for i_event=1:length(header.events)
@@ -52,6 +54,7 @@ for i_event=1:length(header.events)
         events_in_header(end+1) = header.events(i_event); 
     end
 end
+fprintf('%d duplicated events found...\n', numel(events_in_header) - numel(header.events));
 
 % find event codes matching the ones requested for segmentation by the user
 codes_in_header = {events_in_header.code};
@@ -71,7 +74,8 @@ data_out = nan(...
        
 % allocate output event structure  
 names = fieldnames(events_in_header); 
-events_out = cell2struct(cell(numel(names),1), names); 
+names = [names; {'latency_orig'}]; 
+events_out = cell2struct(cell(numel(names), numel(events_in_header)), names); 
 
 % inti counter for output event sturct
 c_event_out = 1;
@@ -86,6 +90,8 @@ c_epoch_out = 1;
 % from the output data array (as there will be nothing assigned, just nans
 % that we allocated)
 out_of_range_events = [];
+
+fprintf('preparing epoched data...\n');
 
 % go over each event that contains a code matching what the user wants to
 % use for segmentation  
@@ -134,13 +140,20 @@ for i_event=1:n_events
     % --------------------------------------------------------------------
     % write event to output structure 
     
-    events_out(c_event_out) = event; 
+    for i_name=1:length(names)
+        if isfield(event, names{i_name})
+            events_out(c_event_out).(names{i_name}) = event.(names{i_name}); 
+        end
+    end
     
     % fix latency to 0
     events_out(c_event_out).latency = 0; 
     
     % fix epoch number to the correct epoch in the output data array
     events_out(c_event_out).epoch = c_epoch_out;
+    
+    % include original latency 
+    events_out(c_event_out).latency_orig = event.latency; 
     
     % update the event counter
     c_event_out = c_event_out + 1;
@@ -217,5 +230,6 @@ header_out.datasize = size(data_out);
 header_out.events = events_out;
 header_out.xstart = x_start;
 
+fprintf('done...\n');
 
 
