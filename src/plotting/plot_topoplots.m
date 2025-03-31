@@ -14,6 +14,8 @@ function [f, ax, cbar] = plot_topoplots(vals, chanlocs, varargin)
 % lab : string, optional
 %     Name of the plotted variable, will be shown as the label on the
 %     colorbar. 
+% mark_chan : cell array of strings, optional
+%     Names of channels that will be marked with a point in the figure. 
 % mark_chan_idx : array of integers, optional
 %     Indices of channels that will be marked with a point in the figure. 
 % cmap : array_like, shape=[n_colors, 3]
@@ -34,6 +36,7 @@ function [f, ax, cbar] = plot_topoplots(vals, chanlocs, varargin)
 parser = inputParser(); 
 
 addParameter(parser, 'lab', ''); 
+addParameter(parser, 'mark_chan', []); 
 addParameter(parser, 'mark_chan_idx', []); 
 addParameter(parser, 'cmax', 1.0 * prctile(vals(:), 100)); 
 addParameter(parser, 'cmap', parula); 
@@ -43,19 +46,23 @@ addParameter(parser, 'cond_labs', []);
 parse(parser, varargin{:}); 
 
 lab = parser.Results.lab; 
+mark_chan = parser.Results.mark_chan; 
 mark_chan_idx = parser.Results.mark_chan_idx; 
 cmax = parser.Results.cmax; 
 cmap = parser.Results.cmap; 
 ax = parser.Results.ax; 
 cond_labs = parser.Results.cond_labs; 
 
+% if channel names are passed, find their index 
+if isempty(mark_chan_idx) && ~isempty(mark_chan)
+    mark_chan_idx = get_chan_idx(chanlocs, mark_chan); 
+end
 
 if isempty(mark_chan_idx)
     show_elec = 'off'; 
 else
     show_elec = 'on'; 
 end
-
 
 % find which dimension 
 idx_dim_chans = find(size(vals) == length(chanlocs)); 
