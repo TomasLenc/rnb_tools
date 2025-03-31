@@ -6,6 +6,7 @@ addParameter(parser, 'data', []);
 addParameter(parser, 'x_start', 0);
 addParameter(parser, 'fs', nan);
 addParameter(parser, 'n_chans', nan);
+addParameter(parser, 'ch_names', []);
 addParameter(parser, 'events', []);
 
 parse(parser, varargin{:});
@@ -13,6 +14,7 @@ parse(parser, varargin{:});
 data = parser.Results.data;
 x_start = parser.Results.x_start;
 fs = parser.Results.fs;
+ch_names = parser.Results.ch_names;
 n_chans = parser.Results.n_chans;
 events = parser.Results.events;
 
@@ -21,7 +23,11 @@ if ~isempty(data) && isnan(n_chans)
     n_chans = size(data, 2); 
 end
 for i=1:n_chans
-    chanlocs(i).labels = sprintf('chan%d', i);
+    if isempty(ch_names)
+        chanlocs(i).labels = sprintf('chan%d', i);
+    else
+        chanlocs(i).labels = ch_names{i}; 
+    end
     chanlocs(i).topo_enabled = false; 
     chanlocs(i).SEEG_enabled = false; 
 end
