@@ -32,7 +32,7 @@ snippets = nan([shape(1:end-1), length(relative_idx), length(frex)]);
 
 N = size(mX, ndims(mX)); 
 
-frex_idx = dsearchn(freq', frex'); 
+frex_idx = dsearchn(ensure_col(freq), ensure_col(frex)); 
 
 for i_f=1:length(frex)
     
