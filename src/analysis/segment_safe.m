@@ -49,22 +49,44 @@ end
 if isempty(x_duration)
     error('pls provide "x_duration" as kwarg'); 
 end
-%% 
+
+%% only look at unique events
 
 fprintf('\nchecking for event duplicates... ');
 
-% only look at unique events
+% unique_events_mask = zeros(1, length(header.events), 'logical'); 
+% unique_events_mask(1) = 1; 
+% for i_event=2:length(header.events)
+%     if ~any(...
+%         ismember({header.events(unique_events_mask([1:i_event-1])).code}, header.events(i_event).code) & ...
+%         ismember([header.events(unique_events_mask([1:i_event-1])).latency], header.events(i_event).latency) & ...
+%         ismember([header.events(unique_events_mask([1:i_event-1])).epoch], header.events(i_event).epoch) ...
+%         )
+%         unique_events_mask(i_event) = 1; 
+%     else
+%         warning('skipping event %d', i_event)
+%         header.events(i_event)
+%     end
+% end
+% events_in_header = header.events(unique_events_mask); 
+
 events_in_header = header.events(1);
-for i_event=1:length(header.events)
-    if ~(...
-        ismember(header.events(i_event).code, {events_in_header.code}) && ...
-        ismember(header.events(i_event).latency, [events_in_header.latency]) && ...
-        ismember(header.events(i_event).epoch, [events_in_header.epoch])...
+for i_event=2:length(header.events)
+    if ~any(...
+        ismember({events_in_header.code}, header.events(i_event).code) & ...
+        ismember([events_in_header.latency], header.events(i_event).latency) & ...
+        ismember([events_in_header.epoch], header.events(i_event).epoch) ...
         )
         events_in_header(end+1) = header.events(i_event); 
+    else
+        warning('skipping event %d', i_event)
+        header.events(i_event)
     end
 end
+
 fprintf('%d duplicated events found...\n', numel(events_in_header) - numel(header.events));
+
+%%
 
 % find event codes matching the ones requested for segmentation by the user
 codes_in_header = {events_in_header.code};
