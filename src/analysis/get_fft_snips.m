@@ -82,6 +82,13 @@ if avg_sides
     % flip the left snippets
     snippets_left = flip(snippets_left, ndims(mX)); 
 
+    % if the signal is complex, we need to take the complex conjugate
+    % before averaging 
+    if ~isreal(snippets)
+        warning('the input is complex, taking complex conjugate of the left snip before averaging sides!'); 
+        snippets_left = conj(snippets_left);         
+    end
+    
     % average the left and right snippets 
     snippets = mean(cat(ndims(snippets)+1, snippets_left, snippets_right), ...
                     ndims(snippets)+1); 
