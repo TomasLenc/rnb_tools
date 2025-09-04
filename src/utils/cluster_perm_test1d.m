@@ -1,10 +1,43 @@
 function clusters_clean = cluster_perm_test1d(data, varargin)
-% data must have shape [n_observations x time]
-
+% Perform a cluster-based permutation test. First, it will do a
+% one sample, sign-permutation test to identify clusters of data points
+% above the requested statistical threshold. Then it will generate a null
+% distribution of cluster sizes (again using the sign-permuted data).
+% Finally, it will return observed clusters that are bigger than expected
+% by chance (i.e. greater than what's expected from the null distribution
+% of cluster sizes. 
+% 
+% Parameters
+% ----------
+% data : array_like, shape=[observations, time]
+%     Data to test. It must be 2-dimensional, with observations (e.g.
+%     subjects) on the first dimension. The second dimension can be
+%     anything, typically time. 
+% n_perm : int, optional, default=10000
+%     Number of permutations
+% p_thr : float, optional, default=0.05
+%     Statistical threshold, pvalue, between 0 and 1. 
+% p_clust : float, optional, default=0.05
+%     Statistical threshold, pvalue, to decide which clusters will be
+%     considered significant based on the null distribution of cluster
+%     sizes. 
+% mu : float, optional, default=0
+%     Value (mean) to test the data against. 
+% do_plot: bool, optional, default=false
+%     If true, the results will be plotted. 
+%     
+% Returns
+% -------
+% clusters_clean : struct
+%     Strucure with indices of each significant cluster in the field named
+%     "PixelIdxList". 
+% 
 parser = inputParser(); 
 
 addParameter(parser, 'n_perm', 10000); 
 addParameter(parser, 'p_thr', 0.05); 
+addParameter(parser, 'p_clust', 0.05); 
+addParameter(parser, 'tail', 0); % -1 below, 1 above, 0 both
 addParameter(parser, 'mu', 0); 
 addParameter(parser, 'plot', false); 
 
@@ -12,6 +45,8 @@ parse(parser, varargin{:});
 
 n_perm = parser.Results.n_perm; 
 p_thr = parser.Results.p_thr; 
+p_clust = parser.Results.p_clust; 
+tail = parser.Results.tail; 
 mu = parser.Results.mu; 
 do_plot = parser.Results.plot; 
 
@@ -34,20 +69,39 @@ for i_perm = 1:n_perm
     data_perm(i_perm,:) = mean(data_fake, 1);
 end
 
-ci = prctile(data_perm, [100*p_thr/2, 100-100*p_thr/2], 1); 
+if tail==0
+    p_thr = p_thr/2; 
+end
+    
+ci = prctile(data_perm, [100*p_thr, 100-100*p_thr], 1); 
 
 %% test observed data against the null distribution 
 
 data_mean_obs = mean(data - mu, 1); 
-signif = data_mean_obs < ci(1,:) | data_mean_obs > ci(2,:); 
+
+if tail==1
+    signif = data_mean_obs > ci(2,:); 
+elseif tail==0
+    signif = data_mean_obs < ci(1,:) | data_mean_obs > ci(2,:); 
+elseif tail==-1
+    signif = data_mean_obs < ci(1,:); 
+end
+
 clusters = bwconncomp(logical(signif));
 
 %% test permuted data against the null distribution to get null distr of cluster sizes
 
 % initialize cluster sizes from permutation
 fake_clust_sizes = zeros(n_perm,1);
+
 for i_perm=1:n_perm    
-    signif_fake = data_perm(i_perm,:) < ci(1,:) | data_perm(i_perm,:) > ci(2,:); 
+    if tail==1
+        signif_fake = data_perm(i_perm,:) > ci(2,:); 
+    elseif tail==0
+        signif_fake = data_perm(i_perm,:) < ci(1,:) | data_perm(i_perm,:) > ci(2,:); 
+    elseif tail==-1
+        signif_fake = data_perm(i_perm,:) < ci(1,:); 
+    end
     % identify clusters
     clusters_fake = bwconncomp(logical(signif_fake));
     % find cluster sizes
@@ -58,7 +112,7 @@ for i_perm=1:n_perm
 end
 
 % compute cluster threshold
-clust_thr = prctile(fake_clust_sizes, 100-p_thr*100);
+clust_thr = prctile(fake_clust_sizes, 100-p_clust*100);
 
 %% test cluster sizes against null 
 
