@@ -1,4 +1,4 @@
-function clusters_clean = cluster_perm_test1d(data, varargin)
+function [clusters_clean, ci] = cluster_perm_test1d(data, varargin)
 % Perform a cluster-based permutation test. First, it will do a
 % one sample, sign-permutation test to identify clusters of data points
 % above the requested statistical threshold. Then it will generate a null
@@ -31,7 +31,9 @@ function clusters_clean = cluster_perm_test1d(data, varargin)
 % clusters_clean : struct
 %     Strucure with indices of each significant cluster in the field named
 %     "PixelIdxList". 
-% 
+% ci : array_like, shape=[2, time]
+%     Confidence interval, first row is the lower CI, second row the upper
+%     CI. 
 parser = inputParser(); 
 
 addParameter(parser, 'n_perm', 10000); 
