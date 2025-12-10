@@ -1,4 +1,4 @@
-function ir = get_erp_kernel(fs, varargin)
+function [ir, t_ir] = get_erp_kernel(fs, varargin)
 % Generate erp-like impulse response kernel. 
 % 
 % Parameters
