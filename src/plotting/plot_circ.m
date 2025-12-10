@@ -1,4 +1,4 @@
-function ax = plot_circ(ph, varargin)
+function [ax, f] = plot_circ(ph, varargin)
 % This function plots timeseries defined as a vector of phase angles on a
 % circular plot. Optionally also plots the mean vector. 
 % 
@@ -37,6 +37,7 @@ addParameter(parser, 'r', []);
 addParameter(parser, 'linew', 1.7); 
 addParameter(parser, 'fontsize', 12); 
 addParameter(parser, 'col_ind', [115, 115, 115]/255); 
+addParameter(parser, 'alpha_ind', 0.2); 
 addParameter(parser, 'col_mean', [196, 70, 16]/255); 
 
 parse(parser, varargin{:}); 
@@ -48,14 +49,25 @@ linew = parser.Results.linew;
 fontsize = parser.Results.fontsize; 
 col_ind = parser.Results.col_ind; 
 col_mean = parser.Results.col_mean; 
+alpha_ind = parser.Results.alpha_ind; 
 
+f = []; 
 if isempty(ax)
     f = figure('color', 'white', 'position', [680 838 153 124]);
     ax = polaraxes;
 end
 
-polarplot(ax, ph, ones(size(ph)), 'o', 'color', col_ind);
+scatter(ax, ph, ones(size(ph)), 40, 'filled', ...
+        'MarkerFaceColor', col_ind, ...
+        'MarkerEdgeColor', col_ind, ...
+        'MarkerEdgeAlpha', alpha_ind, ...
+        'MarkerFaceAlpha', alpha_ind)
+
+% polarplot(ax, ph, ones(size(ph)), 'o', 'color', col_ind, ...
+%           'MarkerFaceColor', col_ind, 'MarkerFaceAlpha', 0.1);
+
 hold(ax, 'on');
+
 if ~isempty(mean_ph) && ~isempty(r)
     polarplot(ax, [mean_ph, mean_ph]', [0, r]', ...
               'color', col_mean, 'linew', linew);
