@@ -35,6 +35,7 @@ function [f, ax, cbar] = plot_topoplots(vals, chanlocs, varargin)
 
 parser = inputParser(); 
 
+addParameter(parser, 'show_contours', false); 
 addParameter(parser, 'lab', ''); 
 addParameter(parser, 'mark_chan', []); 
 addParameter(parser, 'mark_chan_idx', []); 
@@ -45,6 +46,7 @@ addParameter(parser, 'cond_labs', []);
 
 parse(parser, varargin{:}); 
 
+show_contours = parser.Results.show_contours; 
 lab = parser.Results.lab; 
 mark_chan = parser.Results.mark_chan; 
 mark_chan_idx = parser.Results.mark_chan_idx; 
@@ -64,20 +66,26 @@ else
     show_elec = 'on'; 
 end
 
+if show_contours
+    style = 'both'; 
+else 
+    style = 'map'; 
+end
+
 % find which dimension 
 idx_dim_chans = find(size(vals) == length(chanlocs)); 
 dims = [1 : ndims(vals)]; 
 n_cond = size(vals, dims(dims ~= idx_dim_chans)); 
 
+if n_cond == 1
+    fig_size = [565 604 180 146] / 1.3; 
+    marker_size = 4; 
+else 
+    fig_size = [565 604 100*n_cond 146] / 1.3; 
+    marker_size = 2; 
+end
+
 if isempty(ax)    
-    
-    if n_cond == 1
-        fig_size = [565 604 180 146] / 1.3; 
-        marker_size = 4; 
-    else 
-        fig_size = [565 604 100*n_cond 146] / 1.3; 
-        marker_size = 2; 
-    end
     
     f = figure('color', 'white', 'Position', fig_size); 
     pnl = panel(f); 
@@ -98,9 +106,9 @@ for i_cond=1:n_cond
     idx{idx_dim_chans} = ':'; 
     
     topoplot(vals(idx{:}), chanlocs, ...
-             'style', 'map', ...
+             'style', style, ...
              'maplimits', [0, cmax], ...
-             'gridscale', 256, ...
+             'gridscale', 500, ...
              'colormap', cmap, ...
              'electrodes', show_elec, ...
              'emarker2', {mark_chan_idx,'o','r',marker_size});
