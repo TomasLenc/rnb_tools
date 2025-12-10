@@ -5,12 +5,14 @@ parser = inputParser;
 addParameter(parser, 'dt', 0.0001); 
 addParameter(parser, 'sigma', 0.040); % SD
 addParameter(parser, 'plot', false); 
+addParameter(parser, 'amplitudes', []); 
 
 parse(parser, varargin{:}); 
 
 dt = parser.Results.dt; 
 sigma = parser.Results.sigma; 
 do_plot = parser.Results.plot; 
+amplitudes = parser.Results.amplitudes; 
 
 %%
 
@@ -22,7 +24,12 @@ x = [0 : x_N-1] / fs + x_start;
 
 data_idx = dsearchn(x', data); 
 data_vec = zeros(1, x_N); 
-data_vec(data_idx) = 1; 
+if ~isempty(amplitudes)
+    assert(numel(amplitudes) == numel(data_idx))
+    data_vec(data_idx) = amplitudes; 
+else
+    data_vec(data_idx) = 1; 
+end
 
 x = ensure_row(x); 
 data = ensure_col(data); 
@@ -42,6 +49,10 @@ data = ensure_col(data);
 %%
 
 dens = 1/(sqrt(2*pi)*sigma) * exp(-1/2 * ((data-x)/sigma).^2); 
+
+if ~isempty(amplitudes)
+    dens = dens .* amplitudes; 
+end
 
 dens = sum(dens, 1) ./ length(data); 
 
