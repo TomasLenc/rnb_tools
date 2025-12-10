@@ -42,15 +42,15 @@ assert(~isempty(fwhm) || ~isempty(sigma), ...
 
 if ~isempty(fwhm) 
     
-    t = [-(fwhm * 10) : 1/fs : +(fwhm * 10)]; 
+    t_kernel = [-(fwhm * 10) : 1/fs : +(fwhm * 10)]; 
     
-    kernel = exp( (-4 * log(2) * t.^2) ./ fwhm^2 );
+    kernel = exp( (-4 * log(2) * t_kernel.^2) ./ fwhm^2 );
 
 elseif ~isempty(sigma) 
     
-    t = [-(sigma * 10) : 1/fs : +(sigma * 10)]; 
+    t_kernel = [-(sigma * 10) : 1/fs : +(sigma * 10)]; 
     
-    kernel = 1 / sqrt(2*pi*sigma^2) * exp(-1/2 * (t ./ sigma).^2);
+    kernel = 1 / sqrt(2*pi*sigma^2) * exp(-1/2 * (t_kernel ./ sigma).^2);
     % y = normpdf(t, 0, sigma); 
 
 end
