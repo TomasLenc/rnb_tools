@@ -1,4 +1,4 @@
-function [z_snr, mean_snip, idx_snip] = get_z_snr(mX, freq, frex, bin_from, bin_to)
+function [z_snr, mean_snip, idx_snip, noise_mean, noise_sd] = get_z_snr(mX, freq, frex, bin_from, bin_to)
 % Calculate SNR as zscore across harmonics. 
 % 
 % Parameters
