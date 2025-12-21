@@ -40,7 +40,7 @@ sd_method = parser.Results.sd_method;
 if strcmpi(sd_method, 'sample')
     % the zscores were calculated using SD normalized by N-1
     norm_factor = sqrt(  ( (N-1) * (N-k) )  / (k*N) ); 
-elseif strcmpi(sd_method, 'sample')
+elseif strcmpi(sd_method, 'population')
     % the zscores were calculated using SD normalized by N
     norm_factor = sqrt( (N-k) / k ); 
 else 
