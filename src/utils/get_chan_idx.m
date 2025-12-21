@@ -1,5 +1,10 @@
 function idx = get_chan_idx(header_chanlocs_or_labels, chan_labels)
 
+% convert to cell if necessary
+if ischar(chan_labels)
+    chan_labels = {chan_labels}; 
+end
+
 % determine if this is header, chanlocs, or labels
 if iscell(header_chanlocs_or_labels)
     % we got a cell of label strings
