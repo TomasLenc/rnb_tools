@@ -38,7 +38,7 @@ function [max_signif_freq, n_chan_signif_last_iter] = get_max_signif_harm_lw(...
 parser = inputParser; 
 
 addParameter(parser, 'thr_p', 0.01); 
-addParameter(parser, 'mains_frequency', 60); 
+addParameter(parser, 'mains_frequency', 50); 
 addParameter(parser, 'n_successive_nonsignif_steps_to_stop', 1); 
 
 parse(parser, varargin{:});
@@ -74,9 +74,17 @@ while true
         break
     end
     
+    % if we're going 1 harmonic at a time, it may happen that we hit the
+    % power line frequency here and end up with no frex... 
+    if (length(frex) == 1) && (mod(frex, mains_frequency) == 0)
+        % lets just skip 
+        c = c+1; 
+        continue
+    end
+    
     % remove harmomics of power line noise frequency
     frex(mod(frex, mains_frequency) == 0) = [];
-    
+            
     % get zscore snr for each channel
     z_snr = get_z_snr(data, freq, frex, ...
                       snr_bins(1),...
