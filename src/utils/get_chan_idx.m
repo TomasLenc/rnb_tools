@@ -19,5 +19,20 @@ else
     error('cannot figure out what the input is...'); 
 end
 
-idx = cellfun(@(x)find(strcmpi(labs, x)),  chan_labels, 'uni', 1);
+% go over requested channel labels and find each 
+idx = nan(1, length(chan_labels)); 
+
+for i_chan=1:length(chan_labels)
+    
+    tmp = find(strcmpi(labs, chan_labels{i_chan})); 
+    
+    if isempty(tmp)
+        warning('chan %s found no matches', chan_labels{i_chan}); 
+    elseif length(tmp) > 1
+        warning('chan %s found more than 1 match', chan_labels{i_chan}); 
+    else
+        idx(i_chan) = tmp; 
+    end
+    
+end
 
