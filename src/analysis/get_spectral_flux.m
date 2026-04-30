@@ -4,11 +4,17 @@ parser = inputParser;
 
 addParameter(parser, 'fs_target', []); 
 addParameter(parser, 'N_target', []); 
+addParameter(parser, 'win_dur', 0.040); 
+addParameter(parser, 'hop_dur', 0.010); 
+addParameter(parser, 'gamma', 1); 
 
 parse(parser, varargin{:}); 
 
 fs_target = parser.Results.fs_target; 
 N_target = parser.Results.N_target; 
+win_dur = parser.Results.win_dur; % window duration in seconds 
+hop_dur = parser.Results.hop_dur; % hop duration in seconds
+gamma = parser.Results.gamma; % log compression factor (1 = no compression)
 
 % ----------------------------------------------------------------------
 % MIR toolbox 
@@ -55,15 +61,12 @@ N_target = parser.Results.N_target;
 % 4. Positive temporal differences ? Spectral Flux
 % 5. Local-average subtraction ? Enhanced Spectral Flux (optional)
 
-
 if size(s, 2) == 2
     s = mean(s, 2);   % Convert to mono if stereo
 end
 
-win_length = 2048; % round(0.050 * fs_audio); 
-hop_size = 512; % round(win_length / 2); 
-gamma = 1;           % Log compression factor (? ? 1)
-M = 10;          % Local averaging half-window (in frames)
+win_length = round(win_dur * fs); %2048; round(0.050 * fs); 
+hop_size = round(hop_dur * fs);% 512; % round(win_length / 2); 
 
 % Zero-pad the beginning to allow centered windowing
 s = [zeros(win_length,1); s; zeros(win_length,1)];
