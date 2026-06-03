@@ -36,8 +36,10 @@ addParameter(parser, 'mean_ph', []);
 addParameter(parser, 'r', []); 
 addParameter(parser, 'linew', 1.7); 
 addParameter(parser, 'fontsize', 12); 
+addParameter(parser, 'filled', true); 
 addParameter(parser, 'col_ind', [115, 115, 115]/255); 
 addParameter(parser, 'alpha_ind', 0.2); 
+addParameter(parser, 'marker_size', 40); 
 addParameter(parser, 'col_mean', [196, 70, 16]/255); 
 
 parse(parser, varargin{:}); 
@@ -47,6 +49,8 @@ mean_ph = parser.Results.mean_ph;
 r = parser.Results.r; 
 linew = parser.Results.linew; 
 fontsize = parser.Results.fontsize; 
+filled = parser.Results.filled; 
+marker_size = parser.Results.marker_size; 
 col_ind = parser.Results.col_ind; 
 col_mean = parser.Results.col_mean; 
 alpha_ind = parser.Results.alpha_ind; 
@@ -57,12 +61,18 @@ if isempty(ax)
     ax = polaraxes;
 end
 
-scatter(ax, ph, ones(size(ph)), 40, 'filled', ...
-        'MarkerFaceColor', col_ind, ...
-        'MarkerEdgeColor', col_ind, ...
-        'MarkerEdgeAlpha', alpha_ind, ...
-        'MarkerFaceAlpha', alpha_ind)
-
+if filled
+    scatter(ax, ph, ones(size(ph)), marker_size, 'filled', ...
+            'MarkerFaceColor', col_ind, ...
+            'MarkerEdgeColor', col_ind, ...
+            'MarkerEdgeAlpha', alpha_ind, ...
+            'MarkerFaceAlpha', alpha_ind)
+else
+    scatter(ax, ph, ones(size(ph)), marker_size, ...
+            'MarkerFaceColor', 'none', ...
+            'MarkerEdgeColor', col_ind, ...
+            'MarkerEdgeAlpha', alpha_ind)
+end
 % polarplot(ax, ph, ones(size(ph)), 'o', 'color', col_ind, ...
 %           'MarkerFaceColor', col_ind, 'MarkerFaceAlpha', 0.1);
 
