@@ -22,7 +22,16 @@ if iscell(x)
     index{end} = [1 : hN]; 
     X = cellfun(@(X) X(index{:}), X, 'uni', 0); 
     
+    if dc_zero
+        for i=1:length(X)
+            index = repmat({':'}, 1, ndims(X{i})); 
+            index{end} = 1; 
+            X{i}(index{:}) = 0; 
+        end
+    end
+        
 else
+    
     N = size(x, ndims(x)); 
     hN = floor(N/2); 
     X = fft(x, [], ndims(x)); 
@@ -31,12 +40,12 @@ else
     index{end} = [1 : hN]; 
     X = X(index{:}); 
 
-end
+    if dc_zero
+        index = repmat({':'}, 1, ndims(X)); 
+        index{end} = 1; 
+        X(index{:}) = 0; 
+    end
 
-if dc_zero
-    index = repmat({':'}, 1, ndims(X)); 
-    index{end} = 1; 
-    X(index{:}) = 0; 
 end
 
 freq = [0 : hN-1] / N * fs; 
