@@ -45,21 +45,38 @@ function [header, data] = merge_datasets(datasets)
 header = datasets(1).header; 
 data = datasets(1).data; 
 
+labels = {header.chanlocs.labels};
+
 for i_datset=2:length(datasets)
+
+    current_header = datasets(i_datset).header; 
     
-    for i_event=1:length(datasets(i_datset).header.events)
-        
-        header.events(end+1).latency = ...
-            (header.datasize(end)*header.xstep) + ...
-            datasets(i_datset).header.events(i_event).latency; 
-        
-        header.events(end).epoch = 1; 
-        
-        header.events(end).code = ...
-            datasets(i_datset).header.events(i_event).code; 
+    % ensure that channel labels match
+    if ~isequal(labels, {current_header.chanlocs.labels})
+        error('merge_datasets:ChannelLabelMismatch', ...
+            'Channel labels mismatch between datasets.');
     end
-    
-    data = cat(6,data,datasets(i_datset).data); 
+
+    % Merge events
+    for i_event = 1:length(current_header.events)
+
+        % copy full event struct
+        new_event = current_header.events(i_event);
+
+        % adjust latency
+        new_event.latency = ...
+            (header.datasize(end) * header.xstep) + ...
+            current_header.events(i_event).latency;
+
+        % enforce merged dataset properties
+        new_event.epoch = 1;
+
+        % append event
+        header.events(end + 1) = new_event;
+
+    end
+
+    data = cat(6, data, datasets(i_datset).data); 
     
     header.datasize(end) = header.datasize(end) + ...
                                 datasets(i_datset).header.datasize(end); 
