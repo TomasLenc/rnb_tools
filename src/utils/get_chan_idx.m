@@ -1,4 +1,14 @@
-function idx = get_chan_idx(header_chanlocs_or_labels, chan_labels)
+function idx = get_chan_idx(header_chanlocs_or_labels, chan_labels, varargin)
+
+parser = inputParser;
+
+addParameter(parser, 'nan_not_found', true);
+
+parse(parser, varargin{:});
+
+nan_not_found = parser.Results.nan_not_found;
+
+%%
 
 % convert to cell if necessary
 if ischar(chan_labels)
@@ -34,5 +44,9 @@ for i_chan=1:length(chan_labels)
         idx(i_chan) = tmp; 
     end
     
+end
+
+if ~nan_not_found
+    idx = idx(~isnan(idx));
 end
 
