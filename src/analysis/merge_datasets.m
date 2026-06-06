@@ -1,84 +1,99 @@
-function [header, data] = merge_datasets(datasets) 
-% MERGE_DATASETS Merge multiple Letswave6 datasets into a single dataset.
+function [header, data] = merge_datasets(headers, datas)
+% MERGE_DATASETS  Merge multiple Letswave6 datasets into a single dataset.
 %
-% This function concatenates the data arrays from multiple Letswave6
-% datasets along the 6th dimension and combines their event structures
-% into a unified header. Event latencies from subsequent datasets are
-% shifted to reflect their new positions in the merged data.
+% This function concatenates multiple Letswave6 datasets along the 6th
+% dimension and merges their event structures into a unified header.
+% Event latencies from subsequent datasets are shifted to reflect their
+% position in the concatenated signal.
 %
 % Parameters
 % ----------
-% datasets : struct array
-%     Array of Letswave6 dataset structures. Each element must contain:
-%     - header : struct
-%         Metadata describing the dataset, including:
-%         - datasize (numeric array): Size of the data dimensions.
-%         - xstep (double): Temporal resolution (sampling interval).
-%         - events (struct array): Event information with fields:
-%             - latency (double): Event time position.
-%             - code (char or numeric): Event identifier.
-%     - data : numeric array
-%         Multidimensional data array. All datasets must be compatible
-%         for concatenation along the 6th dimension.
+% headers : cell array of struct
+%     Cell array of Letswave6 header structures. Each header must include:
+%     - datasize (numeric array)
+%     - xstep (double)
+%     - chanlocs (struct array with field 'labels')
+%     - events (struct array, optional)
+%
+% datas : cell array of numeric arrays
+%     Cell array of data arrays corresponding to each header. All arrays
+%     must be compatible for concatenation along the 6th dimension.
 %
 % Returns
 % -------
 % header : struct
-%     Merged header structure. Event latencies are adjusted such that
-%     events from subsequent datasets are shifted by the cumulative
-%     duration of preceding datasets. The datasize field is updated
-%     accordingly.
+%     Merged header. Event latencies are adjusted based on cumulative
+%     signal duration. Channel information is preserved from the first dataset.
 %
 % data : numeric array
-%     Merged data array created by concatenating input datasets along
-%     the 6th dimension.
+%     Concatenated data array along the 6th dimension.
 %
 % Notes
 % -----
-% - The first dataset is used as the base dataset.
+% - headers and datas must have the same length.
+% - Channel labels must match exactly (including order) across datasets.
+% - Event structs are copied fully; all additional fields are preserved.
 % - Event latencies are shifted by:
 %       previous_datasize(end) * xstep
 % - All merged events are assigned to epoch = 1.
-% - Assumes datasets only differ along the 6th dimension.
-%
+% - Assumes all datasets differ only along the 6th dimension.
 
-header = datasets(1).header; 
-data = datasets(1).data; 
+% basic checks
+if numel(headers) ~= numel(datas)
+    error('merge_datasets:InputSizeMismatch', ...
+        'headers and datas must have the same number of elements.');
+end
 
+header = headers{1};
+data   = datas{1};
+
+% ensure events field exists
+if ~isfield(header, 'events') || isempty(header.events)
+    header.events = [];
+end
+
+% reference channel labels
 labels = {header.chanlocs.labels};
 
-for i_datset=2:length(datasets)
+for i_dataset = 2:numel(datas)
 
-    current_header = datasets(i_datset).header; 
-    
-    % ensure that channel labels match
-    if ~isequal(labels, {current_header.chanlocs.labels})
+    current_header = headers{i_dataset};
+
+    % Check channel consistency
+    if numel(current_header.chanlocs) ~= numel(labels)
+        error('merge_datasets:ChannelCountMismatch', ...
+            'Channel count mismatch between datasets.');
+    end
+
+    current_labels = {current_header.chanlocs.labels};
+
+    if ~isequal(labels, current_labels)
         error('merge_datasets:ChannelLabelMismatch', ...
             'Channel labels mismatch between datasets.');
     end
 
     % Merge events
-    for i_event = 1:length(current_header.events)
+    if isfield(current_header, 'events') && ~isempty(current_header.events)
 
-        % copy full event struct
-        new_event = current_header.events(i_event);
+        for i_event = 1:numel(current_header.events)
 
-        % adjust latency
-        new_event.latency = ...
-            (header.datasize(end) * header.xstep) + ...
-            current_header.events(i_event).latency;
+            new_event = current_header.events(i_event);
 
-        % enforce merged dataset properties
-        new_event.epoch = 1;
+            new_event.latency = ...
+                (header.datasize(end) * header.xstep) + ...
+                current_header.events(i_event).latency;
 
-        % append event
-        header.events(end + 1) = new_event;
+            new_event.epoch = 1;
 
+            header.events(end + 1) = new_event; %#ok<AGROW>
+        end
     end
 
-    data = cat(6, data, datasets(i_datset).data); 
-    
+    % Concatenate data
+    data = cat(6, data, datas{i_dataset});
+
+    % Update datasize
     header.datasize(end) = header.datasize(end) + ...
-                                datasets(i_datset).header.datasize(end); 
+                           current_header.datasize(end);
 
 end
