@@ -96,7 +96,12 @@ if isfield(header, 'events') && ~isempty(header.events)
     end
 end
 
-out_header.events = cat(2, out_events{:});
+if isempty(out_events)
+    warning('no events inside the cropped time range')
+    out_header.events = []; 
+else
+    out_header.events = cat(2, out_events{:});
+end
 
 % clean header
 if isfield(out_header, 'epochdata')
